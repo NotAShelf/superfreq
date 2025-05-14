@@ -33,6 +33,13 @@ in {
 
     systemd.services.superfreq = {
       wantedBy = ["multi-user.target"];
+      conflicts = [
+        "auto-cpufreq.service"
+        "power-profiles-daemon.service"
+        "tlp.service"
+        "cpupower-gui.service"
+        "thermald.service"
+      ];
       serviceConfig = {
         Environment = optional (cfg.settings != {}) ["SUPERFREQ_CONFIG=${cfgFile}"];
         WorkingDirectory = "";
