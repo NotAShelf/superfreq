@@ -1,7 +1,6 @@
 mod battery;
 mod cli;
 mod config;
-mod conflict;
 mod core;
 mod cpu;
 mod daemon;

@@ -1,6 +1,5 @@
 use crate::config::watcher::ConfigWatcher;
 use crate::config::{AppConfig, LogLevel};
-use crate::conflict;
 use crate::core::SystemReport;
 use crate::engine;
 use crate::monitor;
@@ -32,12 +31,6 @@ pub fn run_daemon(mut config: AppConfig, verbose: bool) -> Result<(), Box<dyn st
     log::set_max_level(level_filter);
 
     info!("Starting superfreq daemon...");
-
-    // Check for conflicts with other power management services
-    let conflicts = conflict::detect_conflicts();
-    if conflicts.has_conflicts() {
-        warn!("{}", conflicts.get_conflict_message());
-    }
 
     // Create a flag that will be set to true when a signal is received
     let running = Arc::new(AtomicBool::new(true));

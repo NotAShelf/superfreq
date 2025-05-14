@@ -1,5 +1,4 @@
 use crate::config::AppConfig;
-use crate::conflict;
 use crate::cpu;
 use crate::monitor;
 use std::error::Error;
@@ -34,7 +33,7 @@ pub fn run_debug(config: &AppConfig) -> Result<(), Box<dyn Error>> {
         println!("System Uptime: Unable to determine");
     }
 
-    // Get system information and conflicts
+    // Get system information
     match monitor::collect_system_report(config) {
         Ok(report) => {
             println!("\n--- SYSTEM INFORMATION ---");
@@ -189,10 +188,6 @@ pub fn run_debug(config: &AppConfig) -> Result<(), Box<dyn Error>> {
                 "Load Average (15 min): {:.2}",
                 report.system_load.load_avg_15min
             );
-
-            println!("\n--- CONFLICT DETECTION ---");
-            let conflicts = conflict::detect_conflicts();
-            println!("{}", conflicts.get_conflict_message());
 
             println!("\n--- DAEMON STATUS ---");
             // Simple check for daemon status - can be expanded later
