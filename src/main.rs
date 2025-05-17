@@ -140,7 +140,7 @@ fn main() -> Result<(), AppError> {
 
                 format_section("CPU Global Info");
                 println!(
-                    "Current Governor:   {}",
+                    "Current Governor:    {}",
                     report
                         .cpu_global
                         .current_governor
@@ -148,11 +148,11 @@ fn main() -> Result<(), AppError> {
                         .unwrap_or("N/A")
                 );
                 println!(
-                    "Available Governors: {}",
+                    "Available Governors: {}", // 21 length baseline
                     report.cpu_global.available_governors.join(", ")
                 );
                 println!(
-                    "Turbo Status:       {}",
+                    "Turbo Status:        {}",
                     match report.cpu_global.turbo_status {
                         Some(true) => "Enabled",
                         Some(false) => "Disabled",
@@ -161,15 +161,15 @@ fn main() -> Result<(), AppError> {
                 );
 
                 println!(
-                    "EPP:                {}",
+                    "EPP:                 {}",
                     report.cpu_global.epp.as_deref().unwrap_or("N/A")
                 );
                 println!(
-                    "EPB:                {}",
+                    "EPB:                 {}",
                     report.cpu_global.epb.as_deref().unwrap_or("N/A")
                 );
                 println!(
-                    "Platform Profile:   {}",
+                    "Platform Profile:    {}",
                     report
                         .cpu_global
                         .platform_profile
@@ -177,7 +177,7 @@ fn main() -> Result<(), AppError> {
                         .unwrap_or("N/A")
                 );
                 println!(
-                    "CPU Temperature:    {}",
+                    "CPU Temperature:     {}",
                     report.cpu_global.average_temperature_celsius.map_or_else(
                         || "N/A (No sensor detected)".to_string(),
                         |t| format!("{t:.1}°C")

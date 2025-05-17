@@ -4,6 +4,7 @@ use crate::core::{OperationalMode, SystemReport, TurboSetting};
 use crate::cpu::{self};
 use crate::util::error::{ControlError, EngineError};
 use log::{debug, info, warn};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Try applying a CPU feature and handle common error cases. Centralizes the where we
 /// previously did:
@@ -112,8 +113,19 @@ pub fn determine_and_apply_settings(
         info!("Setting turbo to '{turbo_setting:?}'");
         match turbo_setting {
             TurboSetting::Auto => {
-                debug!("Managing turbo in auto mode based on system conditions");
-                manage_auto_turbo(report, selected_profile_config)?;
+                if selected_profile_config.enable_auto_turbo {
+                    debug!("Managing turbo in auto mode based on system conditions");
+                    manage_auto_turbo(report, selected_profile_config)?;
+                } else {
+                    debug!(
+                        "Superfreq's dynamic turbo management is disabled by configuration. Ensuring system uses its default behavior for automatic turbo control."
+                    );
+                    // Make sure the system is set to its default automatic turbo mode.
+                    // This is important if turbo was previously forced off.
+                    try_apply_feature("Turbo boost", "system default (Auto)", || {
+                        cpu::set_turbo(TurboSetting::Auto)
+                    })?;
+                }
             }
             _ => {
                 try_apply_feature("Turbo boost", &format!("{turbo_setting:?}"), || {
@@ -172,6 +184,10 @@ pub fn determine_and_apply_settings(
     Ok(())
 }
 
+// Keep track of current auto turbo state for hysteresis using thread-safe atomics
+static PREVIOUS_TURBO_STATE: AtomicBool = AtomicBool::new(false);
+static TURBO_STATE_INITIALIZED: AtomicBool = AtomicBool::new(false);
+
 fn manage_auto_turbo(report: &SystemReport, config: &ProfileConfig) -> Result<(), EngineError> {
     // Get the auto turbo settings from the config, or use defaults
     let turbo_settings = config.turbo_auto_settings.clone().unwrap_or_default();
@@ -204,10 +220,18 @@ fn manage_auto_turbo(report: &SystemReport, config: &ProfileConfig) -> Result<()
         }
     };
 
-    // Decision logic for enabling/disabling turbo
-    let enable_turbo = match (cpu_temp, avg_cpu_usage) {
+    // Get previous state safely using atomic operations
+    let has_previous_state = TURBO_STATE_INITIALIZED.load(Ordering::Acquire);
+    let previous_turbo_enabled = if has_previous_state {
+        Some(PREVIOUS_TURBO_STATE.load(Ordering::Acquire))
+    } else {
+        None
+    };
+
+    // Decision logic for enabling/disabling turbo with hysteresis
+    let enable_turbo = match (cpu_temp, avg_cpu_usage, previous_turbo_enabled) {
         // If temperature is too high, disable turbo regardless of load
-        (Some(temp), _) if temp >= turbo_settings.temp_threshold_high => {
+        (Some(temp), _, _) if temp >= turbo_settings.temp_threshold_high => {
             info!(
                 "Auto Turbo: Disabled due to high temperature ({:.1}°C >= {:.1}°C)",
                 temp, turbo_settings.temp_threshold_high
@@ -215,7 +239,7 @@ fn manage_auto_turbo(report: &SystemReport, config: &ProfileConfig) -> Result<()
             false
         }
         // If load is high enough, enable turbo (unless temp already caused it to disable)
-        (_, Some(usage)) if usage >= turbo_settings.load_threshold_high => {
+        (_, Some(usage), _) if usage >= turbo_settings.load_threshold_high => {
             info!(
                 "Auto Turbo: Enabled due to high CPU load ({:.1}% >= {:.1}%)",
                 usage, turbo_settings.load_threshold_high
@@ -223,20 +247,35 @@ fn manage_auto_turbo(report: &SystemReport, config: &ProfileConfig) -> Result<()
             true
         }
         // If load is low, disable turbo
-        (_, Some(usage)) if usage <= turbo_settings.load_threshold_low => {
+        (_, Some(usage), _) if usage <= turbo_settings.load_threshold_low => {
             info!(
                 "Auto Turbo: Disabled due to low CPU load ({:.1}% <= {:.1}%)",
                 usage, turbo_settings.load_threshold_low
             );
             false
         }
-        // In intermediate load scenarios or if we can't determine, leave turbo in current state
-        // For now, we'll disable it as a safe default
+        // In intermediate load range, maintain previous state (hysteresis)
+        (_, Some(usage), Some(prev_state))
+            if usage > turbo_settings.load_threshold_low
+                && usage < turbo_settings.load_threshold_high =>
+        {
+            info!(
+                "Auto Turbo: Maintaining previous state ({}) due to intermediate load ({:.1}%)",
+                if prev_state { "enabled" } else { "disabled" },
+                usage
+            );
+            prev_state
+        }
+        // In indeterminate states or unknown previous state, default to disabled
         _ => {
             info!("Auto Turbo: Disabled (default for indeterminate state)");
             false
         }
     };
+
+    // Save the current state for next time using atomic operations
+    PREVIOUS_TURBO_STATE.store(enable_turbo, Ordering::Release);
+    TURBO_STATE_INITIALIZED.store(true, Ordering::Release);
 
     // Apply the turbo setting
     let turbo_setting = if enable_turbo {

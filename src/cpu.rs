@@ -212,16 +212,24 @@ fn get_available_governors() -> Result<Vec<String>> {
     ))
 }
 
+// FIXME: I think the Auto Turbo behaviour is still pretty confusing for the end-user
+// who might not have read the documentation in detail. We could just make the program
+// more verbose here, but I think this is a fundamental design flaw that I will want
+// to refactor in the future. For now though, I think this is a good-ish solution.
 pub fn set_turbo(setting: TurboSetting) -> Result<()> {
     let value_pstate = match setting {
         TurboSetting::Always => "0", // no_turbo = 0 means turbo is enabled
         TurboSetting::Never => "1",  // no_turbo = 1 means turbo is disabled
-        TurboSetting::Auto => return Err(ControlError::InvalidValueError("Turbo Auto cannot be directly set via intel_pstate/no_turbo or cpufreq/boost. System default.".to_string())),
+        // For Auto, we need to enable the hardware default (which is turbo enabled)
+        // and we reset to the system default when explicitly set to Auto
+        TurboSetting::Auto => "0", // Set to enabled (default hardware state) when Auto is requested
     };
     let value_boost = match setting {
         TurboSetting::Always => "1", // boost = 1 means turbo is enabled
         TurboSetting::Never => "0",  // boost = 0 means turbo is disabled
-        TurboSetting::Auto => return Err(ControlError::InvalidValueError("Turbo Auto cannot be directly set via intel_pstate/no_turbo or cpufreq/boost. System default.".to_string())),
+        // For Auto, we need to enable the hardware default (which is turbo enabled)
+        // and we reset to the system default when explicitly set to Auto
+        TurboSetting::Auto => "1", // Set to enabled (default hardware state) when Auto is requested
     };
 
     // AMD specific paths

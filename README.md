@@ -20,9 +20,9 @@ Superfreq is a modern CPU frequency and power management utility for Linux
 systems. It provides intelligent control of CPU governors, frequencies, and
 power-saving features, helping optimize both performance and battery life.
 
-It is greatly inspired by auto_cpufreq, but rewritten from ground up to provide
+It is greatly inspired by auto-cpufreq, but rewritten from ground up to provide
 a smoother experience with a more efficient and more correct codebase. Some
-features are omitted, and it is _not_ a drop-in replacement for auto_cpufreq,
+features are omitted, and it is _not_ a drop-in replacement for auto-cpufreq,
 but most common usecases are already implemented.
 
 ## Features
@@ -31,6 +31,8 @@ but most common usecases are already implemented.
   and turbo boost
 - **Intelligent Power Management**: Different profiles for AC and battery
   operation
+- **Dynamic Turbo Boost Control**: Automatically enables/disables turbo based on
+  CPU load and temperature
 - **Fine-tuned Controls**: Adjust energy performance preferences, biases, and
   frequency limits
 - **Per-core Control**: Apply settings globally or to specific CPU cores
@@ -150,6 +152,10 @@ variable.
 governor = "performance"
 # Turbo boost setting: "always", "auto", or "never"
 turbo = "auto"
+# Enable or disable automatic turbo management (when turbo = "auto")
+enable_auto_turbo = true
+# Custom thresholds for auto turbo management
+turbo_auto_settings = { load_threshold_high = 70.0, load_threshold_low = 30.0, temp_threshold_high = 75.0 }
 # Energy Performance Preference
 epp = "performance"
 # Energy Performance Bias (0-15 scale or named value)
@@ -166,6 +172,9 @@ max_freq_mhz = 3500
 [battery]
 governor = "powersave"
 turbo = "auto"
+# More conservative auto turbo settings on battery
+enable_auto_turbo = true
+turbo_auto_settings = { load_threshold_high = 80.0, load_threshold_low = 40.0, temp_threshold_high = 70.0 }
 epp = "power"
 epb = "balance_power"
 platform_profile = "low-power"
@@ -208,6 +217,43 @@ mouse_battery = "hid-12:34:56:78:90:ab-battery"
 Those are the more advanced features of Superfreq that some users might be more
 inclined to use than others. If you have a use-case that is not covered, please
 create an issue.
+
+### Dynamic Turbo Boost Management
+
+When using `turbo = "auto"` with `enable_auto_turbo = true`, Superfreq
+dynamically controls CPU turbo boost based on:
+
+- **CPU Load Thresholds**: Enables turbo when load exceeds `load_threshold_high`
+  (default 70%), disables when below `load_threshold_low` (default 30%)
+- **Temperature Protection**: Automatically disables turbo when CPU temperature
+  exceeds `temp_threshold_high` (default 75°C)
+- **Hysteresis Control**: Prevents rapid toggling by maintaining previous state
+  when load is between thresholds
+- **Profile-Specific Settings**: Configure different thresholds for battery vs.
+  AC power
+
+This feature optimizes performance and power consumption by providing maximum
+performance for demanding tasks while conserving energy during light workloads.
+
+> [!TIP]
+> You can disable this logic with `enable_auto_turbo = false` to let the system
+> handle turbo boost natively when `turbo = "auto"`.
+
+#### Turbo Boost Behavior Table
+
+The table below explains how different combinations of `turbo` and
+`enable_auto_turbo` settings affect CPU turbo behavior:
+
+| Setting            | `enable_auto_turbo = true`                                                                               | `enable_auto_turbo = false`                                                                                  |
+| ------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `turbo = "always"` | **Always enabled**<br>Turbo is always active regardless of CPU load or temperature                       | **Always enabled**<br>Turbo is always active regardless of CPU load or temperature                           |
+| `turbo = "never"`  | **Always disabled**<br>Turbo is always disabled regardless of CPU load or temperature                    | **Always disabled**<br>Turbo is always disabled regardless of CPU load or temperature                        |
+| `turbo = "auto"`   | **Dynamically managed**<br>Superfreq enables/disables turbo based on CPU load and temperature thresholds | **System default**<br>Turbo is reset to system's default enabled state and is managed by the hardware/kernel |
+
+> [!NOTE]
+> When `turbo = "auto"` and `enable_auto_turbo = false`, Superfreq ensures that
+> any previous turbo state restrictions are removed, allowing the
+> hardware/kernel to manage turbo behavior according to its default algorithms.
 
 ### Adaptive Polling
 
@@ -275,7 +321,8 @@ the codebase as they stand.
 
 ### Setup
 
-You will need Cargo and Rust installed on your system. Rust 1.80 or later is required.
+You will need Cargo and Rust installed on your system. Rust 1.80 or later is
+required.
 
 A `.envrc` is provided, and it's usage is encouraged for Nix users.
 Alternatively, you may use Nix for a reproducible developer environment
