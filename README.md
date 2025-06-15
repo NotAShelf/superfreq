@@ -16,9 +16,9 @@
 
 ## What is Watt
 
-Watt is a modern CPU frequency and power management utility for Linux
-systems. It provides intelligent control of CPU governors, frequencies, and
-power-saving features, helping optimize both performance and battery life.
+Watt is a modern CPU frequency and power management utility for Linux systems.
+It provides intelligent control of CPU governors, frequencies, and power-saving
+features, helping optimize both performance and battery life.
 
 It is greatly inspired by auto-cpufreq, but rewritten from ground up to provide
 a smoother experience with a more efficient and more correct codebase. Some
@@ -230,8 +230,8 @@ create an issue.
 
 ### Dynamic Turbo Boost Management
 
-When using `turbo = "auto"` with `enable_auto_turbo = true`, Watt
-dynamically controls CPU turbo boost based on:
+When using `turbo = "auto"` with `enable_auto_turbo = true`, Watt dynamically
+controls CPU turbo boost based on:
 
 - **CPU Load Thresholds**: Enables turbo when load exceeds `load_threshold_high`
   (default 70%), disables when below `load_threshold_low` (default 30%)
@@ -256,21 +256,21 @@ performance for demanding tasks while conserving energy during light workloads.
 The table below explains how different combinations of `turbo` and
 `enable_auto_turbo` settings affect CPU turbo behavior:
 
-| Setting            | `enable_auto_turbo = true`                                                                               | `enable_auto_turbo = false`                                                                                  |
-| ------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `turbo = "always"` | **Always enabled**<br>Turbo is always active regardless of CPU load or temperature                       | **Always enabled**<br>Turbo is always active regardless of CPU load or temperature                           |
-| `turbo = "never"`  | **Always disabled**<br>Turbo is always disabled regardless of CPU load or temperature                    | **Always disabled**<br>Turbo is always disabled regardless of CPU load or temperature                        |
+| Setting            | `enable_auto_turbo = true`                                                                          | `enable_auto_turbo = false`                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `turbo = "always"` | **Always enabled**<br>Turbo is always active regardless of CPU load or temperature                  | **Always enabled**<br>Turbo is always active regardless of CPU load or temperature                           |
+| `turbo = "never"`  | **Always disabled**<br>Turbo is always disabled regardless of CPU load or temperature               | **Always disabled**<br>Turbo is always disabled regardless of CPU load or temperature                        |
 | `turbo = "auto"`   | **Dynamically managed**<br>Watt enables/disables turbo based on CPU load and temperature thresholds | **System default**<br>Turbo is reset to system's default enabled state and is managed by the hardware/kernel |
 
 > [!NOTE]
-> When `turbo = "auto"` and `enable_auto_turbo = false`, Watt ensures that
-> any previous turbo state restrictions are removed, allowing the
-> hardware/kernel to manage turbo behavior according to its default algorithms.
+> When `turbo = "auto"` and `enable_auto_turbo = false`, Watt ensures that any
+> previous turbo state restrictions are removed, allowing the hardware/kernel to
+> manage turbo behavior according to its default algorithms.
 
 ### Adaptive Polling
 
-Watt includes a "sophisticated" (euphemism for complicated) adaptive
-polling system to try and maximize power efficiency
+Watt includes a "sophisticated" (euphemism for complicated) adaptive polling
+system to try and maximize power efficiency
 
 - **Battery Discharge Analysis** - Automatically adjusts polling frequency based
   on the battery discharge rate, reducing system activity when battery is
@@ -294,8 +294,8 @@ idle periods, while maintaining responsiveness when needed.
 
 ### Power Supply Filtering
 
-Configure Watt to ignore certain power supplies (like peripheral batteries)
-that might interfere with power state detection.
+Configure Watt to ignore certain power supplies (like peripheral batteries) that
+might interfere with power state detection.
 
 ## Troubleshooting
 

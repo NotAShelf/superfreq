@@ -6,7 +6,7 @@
 in
   rustPlatform.buildRustPackage (finalAttrs: {
     pname = "watt";
-    version = (builtins.fromTOML (builtins.readFile ../Cargo.toml)).package.version;
+    version = "0.1.0";
 
     src = fs.toSource {
       root = ../.;
